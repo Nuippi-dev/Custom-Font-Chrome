@@ -1,1 +1,6 @@
+import javascript
+
+from VariableDecl var
+where not var.isUsed()
+select var, "Unused variable found: " + var.getAName()
 
