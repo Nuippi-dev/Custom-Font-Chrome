@@ -33,9 +33,11 @@ jobs:
             build-mode: manual
 
     steps:
+      # Step 1: Checkout repository
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # Step 2: Initialize CodeQL
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v3
         with:
@@ -43,6 +45,7 @@ jobs:
           build-mode: ${{ matrix.build-mode }}
           queries: +security-extended,security-and-quality
 
+      # Step 3: Manual build (only for specific languages like c-cpp and java-kotlin)
       - if: matrix.build-mode == 'manual'
         name: Manual Build
         shell: bash
@@ -55,24 +58,25 @@ jobs:
           else
             echo "No build commands defined!"
             exit 1
-          fi
 
+      # Step 4: Perform CodeQL Analysis
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3
         with:
           category: "/language:${{matrix.language}}"
 
+      # Step 5: Send email notification if CodeQL analysis fails
       - name: Notify on Failure
-        if: failure()
+        if: failure() # This block runs ONLY if the job fails
         uses: dawidd6/action-send-mail@v3
         with:
-          server_address: smtp.example.com
+          server_address: smtp.gmail.com
           server_port: 587
-          username: ${{ secrets.EMAIL_USERNAME }}
-          password: ${{ secrets.EMAIL_PASSWORD }}
+          username: ${{ secrets.EMAIL_USERNAME }} # Use the secrets you set up
+          password: ${{ secrets.EMAIL_PASSWORD }} # Use the secrets you set up
           subject: "CodeQL Analysis Failed"
           body: |
             CodeQL analysis has failed for ${{ matrix.language }}.
             Please check the security alerts in the repository.
-          to: example@example.com
+          to: your-email@example.com  # Replace this with your recipient email
           from: CodeQL Bot <bot@example.com>
