@@ -2,6 +2,10 @@
 
 A CSS extension for Chrome that allows you to change the font.
 
+## Preview
+![Custom Font Injector in action](https://github.com/user-attachments/assets/73501bac-c85f-4788-a701-9efa1965c550)!
+
+
 ## Features
 - Select a font from a predefined list.
 - Apply the font to the active tab with a single click.
