@@ -10,83 +10,34 @@ on:
 
 jobs:
   analyze:
-    name: Analyze (${{ matrix.language }})
-    runs-on: ${{ (matrix.language == 'swift' && 'macos-latest') || 'ubuntu-latest' }}
+    name: Analyze JavaScript
+    runs-on: ubuntu-latest
     
     permissions:
       security-events: write
       actions: read
       contents: read
-      packages: read
 
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - language: javascript-typescript
-            build-mode: none
-          - language: python
-            build-mode: none
-          - language: java-kotlin
-            build-mode: manual
-          - language: c-cpp
-            build-mode: manual
+        language: [ "javascript-typescript" ] # Only analyze JavaScript/TypeScript files
 
     steps:
-      # Step 1: Checkout repository
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # Step 2: Set up dependencies (optional)
-      - name: Install Dependencies
-        if: matrix.language == 'python'
-        run: |
-          python -m venv venv
-          source venv/bin/activate
-          pip install -r requirements.txt || echo "No requirements.txt found."
-
-      - name: Install Node Dependencies
-        if: matrix.language == 'javascript-typescript'
-        run: |
-          npm install || echo "No package.json found. Skipping npm install."
-
-      # Step 3: Initialize CodeQL
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v3
         with:
           languages: ${{ matrix.language }}
-          build-mode: ${{ matrix.build-mode }}
           queries: +security-extended,security-and-quality
 
-      # Step 4: Manual Build for Specific Languages
-      - if: matrix.build-mode == 'manual'
-        name: Manual Build
-        shell: bash
-        run: |
-          echo "Building for manual languages..."
-          if [ "${{ matrix.language }}" = "java-kotlin" ]; then
-            if [ -f "gradlew" ]; then
-              ./gradlew build
-            else
-              echo "No gradlew file found. Skipping build."
-            fi
-          elif [ "${{ matrix.language }}" = "c-cpp" ]; then
-            if [ -f "Makefile" ]; then
-              make
-            else
-              echo "No Makefile found. Skipping build."
-            fi
-          else
-            echo "No build commands defined!"
-            exit 1
-
-      # Step 5: Perform CodeQL Analysis
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3
         with:
-          category: "/language:${{matrix.language}}"
+          category: "/language:${{ matrix.language }}"
 
-      # Step 6: Send Email Notification on Failure
       - name: Notify on Failure
         if: failure()
         uses: dawidd6/action-send-mail@v3
@@ -101,11 +52,3 @@ jobs:
             Please check the security alerts in the repository.
           to: example@example.com
           from: CodeQL Bot <bot@example.com>
-
-      # Step 7: Debugging Step (Optional)
-      - name: Debugging Logs
-        if: always()
-        run: |
-          echo "Workflow completed for ${{ matrix.language }}."
-          echo "Build mode: ${{ matrix.build-mode }}"
-
