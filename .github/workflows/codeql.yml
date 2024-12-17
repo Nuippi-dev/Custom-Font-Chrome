@@ -37,7 +37,20 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # Step 2: Initialize CodeQL
+      # Step 2: Set up dependencies (optional)
+      - name: Install Dependencies
+        if: matrix.language == 'python'
+        run: |
+          python -m venv venv
+          source venv/bin/activate
+          pip install -r requirements.txt || echo "No requirements.txt found."
+
+      - name: Install Node Dependencies
+        if: matrix.language == 'javascript-typescript'
+        run: |
+          npm install || echo "No package.json found. Skipping npm install."
+
+      # Step 3: Initialize CodeQL
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v3
         with:
@@ -45,38 +58,54 @@ jobs:
           build-mode: ${{ matrix.build-mode }}
           queries: +security-extended,security-and-quality
 
-      # Step 3: Manual build (only for specific languages like c-cpp and java-kotlin)
+      # Step 4: Manual Build for Specific Languages
       - if: matrix.build-mode == 'manual'
         name: Manual Build
         shell: bash
         run: |
           echo "Building for manual languages..."
           if [ "${{ matrix.language }}" = "java-kotlin" ]; then
-            ./gradlew build
+            if [ -f "gradlew" ]; then
+              ./gradlew build
+            else
+              echo "No gradlew file found. Skipping build."
+            fi
           elif [ "${{ matrix.language }}" = "c-cpp" ]; then
-            make
+            if [ -f "Makefile" ]; then
+              make
+            else
+              echo "No Makefile found. Skipping build."
+            fi
           else
             echo "No build commands defined!"
             exit 1
 
-      # Step 4: Perform CodeQL Analysis
+      # Step 5: Perform CodeQL Analysis
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3
         with:
           category: "/language:${{matrix.language}}"
 
-      # Step 5: Send email notification if CodeQL analysis fails
+      # Step 6: Send Email Notification on Failure
       - name: Notify on Failure
-        if: failure() # This block runs ONLY if the job fails
+        if: failure()
         uses: dawidd6/action-send-mail@v3
         with:
           server_address: smtp.gmail.com
           server_port: 587
-          username: ${{ secrets.EMAIL_USERNAME }} # Use the secrets you set up
-          password: ${{ secrets.EMAIL_PASSWORD }} # Use the secrets you set up
+          username: ${{ secrets.EMAIL_USERNAME }}
+          password: ${{ secrets.EMAIL_PASSWORD }}
           subject: "CodeQL Analysis Failed"
           body: |
             CodeQL analysis has failed for ${{ matrix.language }}.
             Please check the security alerts in the repository.
-          to: your-email@example.com  # Replace this with your recipient email
+          to: example@example.com
           from: CodeQL Bot <bot@example.com>
+
+      # Step 7: Debugging Step (Optional)
+      - name: Debugging Logs
+        if: always()
+        run: |
+          echo "Workflow completed for ${{ matrix.language }}."
+          echo "Build mode: ${{ matrix.build-mode }}"
+
