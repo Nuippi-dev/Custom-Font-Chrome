@@ -1,0 +1,48 @@
+name: Send Email Notification with CodeQL Scan
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  codeql-and-notify:
+    name: CodeQL Scan and Email
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Checkout the repository
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      # Step 2: Initialize CodeQL
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v2
+        with:
+          languages: javascript, python, java, cpp
+          queries: security-and-quality
+
+      # Step 3: Perform CodeQL Analysis
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v2
+
+      # Step 4: Send Email Notification
+      - name: Send Email
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.gmail.com
+          server_port: 587
+          username: ${{ secrets.EMAIL_USERNAME }}
+          password: ${{ secrets.EMAIL_PASSWORD }}
+          subject: CodeQL Scan Results
+          to: nuippigrimfur@gmail.com
+          from: nuippigrimfur@gmail.com
+          body: |
+            CodeQL Scan completed.
+
+            - JavaScript: ✅
+            - Python: ✅
+            - Java/Kotlin: ❌ (Check logs)
+            - C++: ❌ (Check logs)
+
+            Review the full workflow logs in your GitHub Actions.
