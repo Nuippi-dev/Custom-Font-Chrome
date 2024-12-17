@@ -93,8 +93,7 @@ dist
 
 # Gatsby files
 .cache/
-# Comment in the public line in if your project uses Gatsby and not Next.js
-# https://nextjs.org/blog/next-9-1#public-directory-support
+# Uncomment for Gatsby projects, not Next.js:
 # public
 
 # vuepress build output
@@ -128,3 +127,34 @@ dist
 .yarn/build-state.yml
 .yarn/install-state.gz
 .pnp.*
+
+# --------------------------------------
+# Additional Chrome Extension-Specific Excludes
+# --------------------------------------
+
+# Chrome extension packaging artifacts
+*.crx
+*.pem
+*.zip
+
+# Build output
+dist/
+build/
+
+# Temporary files
+temp/
+
+# OS-specific files
+.DS_Store
+Thumbs.db
+
+# IDEs and editors
+.vscode/
+.idea/
+
+# Ignore any test or debug output
+debug/
+test-output/
+
+# Ignore generated documentation
+docs/
