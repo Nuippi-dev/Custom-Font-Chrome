@@ -1,49 +1,78 @@
-# For most projects, this workflow file will not need changing; you simply need
-# to commit it to your repository.
-#
-# You may wish to alter this file to override the set of languages analyzed,
-# or to provide custom queries or build logic.
-#
-# ******** NOTE ********
-# We have attempted to detect the languages in your repository. Please check
-# the `language` matrix defined below to confirm you have the correct set of
-# supported CodeQL languages.
-#
 name: "CodeQL Analysis"
 
 on:
-  push:                     # Run CodeQL on push events
-    branches: [ main ]
-  pull_request:             # Run on PRs to the main branch
-    branches: [ main ]
-  schedule:                 # Run weekly for regular scanning
-    - cron: '0 0 * * 0'
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  schedule:
+    - cron: '24 0 * * 5' # Weekly scan every Friday at 00:24 UTC
 
 jobs:
   analyze:
-    name: Analyze
-    runs-on: ubuntu-latest  # Use Ubuntu for the environment
+    name: Analyze (${{ matrix.language }})
+    runs-on: ${{ (matrix.language == 'swift' && 'macos-latest') || 'ubuntu-latest' }}
+    
+    permissions:
+      security-events: write
+      actions: read
+      contents: read
+      packages: read
 
     strategy:
       fail-fast: false
       matrix:
-        language: [ 'javascript', 'typescript' ]  # Languages to analyze
+        include:
+          - language: javascript-typescript
+            build-mode: none
+          - language: python
+            build-mode: none
+          - language: java-kotlin
+            build-mode: manual
+          - language: c-cpp
+            build-mode: manual
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4  # Fetch your repository code
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-    - name: Initialize CodeQL
-      uses: github/codeql-action/init@v3
-      with:
-        languages: ${{ matrix.language }} # Run analysis on the specified languages
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: ${{ matrix.build-mode }}
+          queries: +security-extended,security-and-quality
 
-    - name: Perform CodeQL Analysis
-      uses: github/codeql-action/analyze@v3
-      with:
-        category: "/language:${{ matrix.language }}" # Custom category for better organization
+      - if: matrix.build-mode == 'manual'
+        name: Manual Build
+        shell: bash
+        run: |
+          echo "Building for manual languages..."
+          if [ "${{ matrix.language }}" = "java-kotlin" ]; then
+            ./gradlew build
+          elif [ "${{ matrix.language }}" = "c-cpp" ]; then
+            make
+          else
+            echo "No build commands defined!"
+            exit 1
+          fi
 
-    - name: Perform CodeQL Analysis
-      uses: github/codeql-action/analyze@v3
-      with:
-        category: "/language:${{matrix.language}}"
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: "/language:${{matrix.language}}"
+
+      - name: Notify on Failure
+        if: failure()
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: smtp.example.com
+          server_port: 587
+          username: ${{ secrets.EMAIL_USERNAME }}
+          password: ${{ secrets.EMAIL_PASSWORD }}
+          subject: "CodeQL Analysis Failed"
+          body: |
+            CodeQL analysis has failed for ${{ matrix.language }}.
+            Please check the security alerts in the repository.
+          to: example@example.com
+          from: CodeQL Bot <bot@example.com>
