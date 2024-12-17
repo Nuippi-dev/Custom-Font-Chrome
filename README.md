@@ -3,7 +3,8 @@
 A CSS extension for Chrome that allows you to change the font.
 
 ## Preview
-![Custom Font Injector in action](https://github.com/user-attachments/assets/73501bac-c85f-4788-a701-9efa1965c550)!
+![Custom Font Injector in action](https://github.com/user-attachments/assets/73501bac-c85f-4788-a701-9efa1965c550)
+A screenshot of the extension changing the font for ChatGPT into Cinzel Decorative
 
 
 ## Features
